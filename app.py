@@ -10,20 +10,19 @@ def execute_sf_query(SF, query):
     return SF.query_all(query)['records']
 
 
-def get_cases():
+def get_cases_query():
     sf_sql = """
         SELECT
             CaseNumber,
-            Origin,
-            Reason,
             CreatedDate,
             ClosedDate,
-            Description,
-            Priority,
             Status,
-            Subject
+            Priority,
+            Organization__c,
+            ads_resourceman__Related_Service__c,
+            Description
         FROM Case
-        WHERE CaseNumber = '00041202'
+        WHERE Organization__c = 'Houston Food Bank'
     """
     # WHERE CreatedDate = LAST_N_DAYS:1
     return sf_sql
@@ -67,7 +66,9 @@ def list_of_dicts_to_csv_string(list_of_dicts):
 
 
 def csv_string_to_s3(csv_str, bucket, path_in_bucket):
-    """Writes a csv string to a file in S3
+    """Writes a csv string to a file in S3.
+    Assumes AWS credentials are stored locally in ~/.aws/credentials as described here:
+    https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html
 
     Parameters
     ----------
@@ -98,9 +99,9 @@ def main():
     raw_results = execute_sf_query(sf, get_cases())
     dict_results = build_result_dict(raw_results)
     print('len of results: {l}'.format(l=len(dict_results)))
-    # list_of_dicts_to_local_csv_file(dict_results, file_path='./cases.csv')
-    csv_results = list_of_dicts_to_csv_string(dict_results)
-    csv_string_to_s3(csv_results, 'hfb-etl-data', 'cax_test.csv')
+    list_of_dicts_to_local_csv_file(dict_results, file_path='./cases.csv')
+    # csv_results = list_of_dicts_to_csv_string(dict_results)
+    # csv_string_to_s3(csv_results, 'hfb-etl-data', 'cax_test.csv')
 
 
 main()
