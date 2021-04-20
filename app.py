@@ -10,7 +10,7 @@ def execute_sf_query(SF, query):
     return SF.query_all(query)['records']
 
 
-def get_cases_query():
+def get_cases():
     sf_sql = """
         SELECT
             CaseNumber,
@@ -96,7 +96,7 @@ def main():
     }
     sf = Salesforce(**credentials)
     print('connected to sf')
-    raw_results = execute_sf_query(sf, get_cases())
+    raw_results = execute_sf_query(sf, query=get_cases())
     dict_results = build_result_dict(raw_results)
     print('len of results: {l}'.format(l=len(dict_results)))
     list_of_dicts_to_local_csv_file(dict_results, file_path='./cases.csv')
