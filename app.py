@@ -28,6 +28,22 @@ def get_cases():
     return sf_sql
 
 
+def get_contacts():
+    sf_sql = """
+        SELECT
+            Name,
+            Phone,
+            Email,
+            MobilePhone,
+            HasOptedOutOfEmail,
+            smagicinteract__SMSOptOut__c
+        FROM Contact
+    """
+    #     WHERE CreatedDate = LAST_N_DAYS:30
+    # """
+    return sf_sql
+
+
 def build_result_dict(raw_results):
     clean_results = []
     for r in raw_results:
@@ -35,6 +51,13 @@ def build_result_dict(raw_results):
         _keys = r.keys()
         clean_results.append({a: r[a] for a in _keys})
     return clean_results
+
+
+def get_sf_query_results(sf, query):
+    raw_results = execute_sf_query(sf, query)
+    dict_results = build_result_dict(raw_results)
+    print('len of results: {l}'.format(l=len(dict_results)))
+    return dict_results
 
 
 def list_of_dicts_to_local_csv_file(list_of_dicts, file_path):
@@ -53,6 +76,7 @@ def list_of_dicts_to_local_csv_file(list_of_dicts, file_path):
         dict_writer = csv.DictWriter(output_file, fieldnames=keys)
         dict_writer.writeheader()
         dict_writer.writerows(list_of_dicts)
+    print(f'Local file written: {file_path}')
 
 
 def list_of_dicts_to_csv_string(list_of_dicts):
@@ -95,13 +119,19 @@ def main():
         'security_token': os.environ['SECURITY_TOKEN'],
     }
     sf = Salesforce(**credentials)
-    print('connected to sf')
-    raw_results = execute_sf_query(sf, query=get_cases())
-    dict_results = build_result_dict(raw_results)
-    print('len of results: {l}'.format(l=len(dict_results)))
-    list_of_dicts_to_local_csv_file(dict_results, file_path='./cases.csv')
-    # csv_results = list_of_dicts_to_csv_string(dict_results)
-    # csv_string_to_s3(csv_results, 'hfb-etl-data', 'cax_test.csv')
+    print('Connected to sf')
+    
+    print('Getting cases')
+    dict_results = get_sf_query_results(sf, query=get_cases())
+    # list_of_dicts_to_local_csv_file(dict_results, file_path='./cases.csv')
+    csv_results = list_of_dicts_to_csv_string(dict_results)
+    csv_string_to_s3(csv_results, 'hfb-etl-data', 'raw/combined-arms/cases.csv')
+
+    print('Getting contacts')
+    dict_results = get_sf_query_results(sf, query=get_contacts())
+    # list_of_dicts_to_local_csv_file(dict_results, file_path='./contacts.csv')
+    csv_results = list_of_dicts_to_csv_string(dict_results)
+    csv_string_to_s3(csv_results, 'hfb-etl-data', 'raw/combined-arms/contacts.csv')
 
 
 main()
